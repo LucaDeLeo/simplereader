@@ -42,6 +42,11 @@ export const ERROR_CODES = {
   // Network Errors (Offscreen Document)
   NETWORK_DOWNLOAD_FAILED: 'NETWORK_DOWNLOAD_FAILED',
   NETWORK_TIMEOUT: 'NETWORK_TIMEOUT',
+
+  // Offscreen Document Errors (Background)
+  OFFSCREEN_CREATION_FAILED: 'OFFSCREEN_CREATION_FAILED',
+  OFFSCREEN_MESSAGE_FAILED: 'OFFSCREEN_MESSAGE_FAILED',
+  OFFSCREEN_NOT_READY: 'OFFSCREEN_NOT_READY',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -136,6 +141,19 @@ export function createNetworkError(
   originalError?: unknown
 ): ExtensionError {
   return createError(code, message, 'offscreen', recoverable, originalError);
+}
+
+/**
+ * Create an offscreen document error (background context).
+ * Use for: document creation, messaging, lifecycle failures.
+ */
+export function createOffscreenError(
+  code: string,
+  message: string,
+  recoverable: boolean,
+  originalError?: unknown
+): ExtensionError {
+  return createError(code, message, 'background', recoverable, originalError);
 }
 
 // ============================================
@@ -257,6 +275,13 @@ export function isStorageError(error: ExtensionError): boolean {
  */
 export function isNetworkError(error: ExtensionError): boolean {
   return error.code.startsWith('NETWORK_');
+}
+
+/**
+ * Check if an ExtensionError is an offscreen document error.
+ */
+export function isOffscreenError(error: ExtensionError): boolean {
+  return error.code.startsWith('OFFSCREEN_');
 }
 
 /**

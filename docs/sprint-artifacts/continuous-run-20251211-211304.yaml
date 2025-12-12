@@ -28,6 +28,9 @@ queue:
   - story_key: "2-1-content-extraction-with-mozilla-readability"
     epic_id: "2"
     initial_status: backlog
+  - story_key: "2-2-offscreen-document-setup-with-lifecycle-management"
+    epic_id: "2"
+    initial_status: backlog
 
 completed_stories:
   - story_key: "1-1-initialize-wxt-project-with-react-template"
@@ -42,11 +45,13 @@ completed_stories:
     commit: "5540375"
   - story_key: "1-6-create-extension-entrypoint-skeletons"
     commit: "3afb5b2"
+  - story_key: "2-1-content-extraction-with-mozilla-readability"
+    commit: "646061f"
 
 checkpoint:
-  story_key: "2-1-content-extraction-with-mozilla-readability"
+  story_key: "2-2-offscreen-document-setup-with-lifecycle-management"
   phase: "implement"
-  saved_at: "2025-12-11T21:45:00Z"
+  saved_at: "2025-12-11T21:55:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-1-content-extraction-with-mozilla-readability.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-2-offscreen-document-setup-with-lifecycle-management.md"
     review_cycles: 0
