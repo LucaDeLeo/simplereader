@@ -26,13 +26,14 @@ queue:
     epic_id: "1"
     initial_status: backlog
 
-completed_stories: []
-failed_story: null
+completed_stories:
+  - story_key: "1-1-initialize-wxt-project-with-react-template"
+    commit: "2bd3312"
 
 checkpoint:
-  story_key: "1-1-initialize-wxt-project-with-react-template"
+  story_key: "1-2-configure-manifest-for-wasm-and-required-permissions"
   phase: "implement"
-  saved_at: "2025-12-11T21:14:00Z"
+  saved_at: "2025-12-11T21:18:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-1-initialize-wxt-project-with-react-template.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-2-configure-manifest-for-wasm-and-required-permissions.md"
     review_cycles: 0
