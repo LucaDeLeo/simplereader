@@ -77,8 +77,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Content Intelligence
-  epic-5: backlog
-  5-1-table-reading-row-by-row: backlog
+  epic-5: in-progress
+  5-1-table-reading-row-by-row: done
   5-2-code-block-handling: backlog
   5-3-selected-text-reading: backlog
   5-4-visual-distinction-for-spoken-words: backlog

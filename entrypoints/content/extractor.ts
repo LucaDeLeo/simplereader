@@ -1,5 +1,6 @@
 import { Readability, isProbablyReaderable } from '@mozilla/readability';
 import { createContentError, ERROR_CODES } from '@/lib/errors';
+import { preprocessTablesForTTS } from './table-processor';
 
 export interface ExtractedContent {
   text: string;
@@ -28,6 +29,14 @@ export function extractContent(): ExtractedContent {
 
   // CRITICAL: Clone document before parsing - Readability mutates the DOM
   const documentClone = document.cloneNode(true) as Document;
+
+  // Pre-process tables for TTS-friendly reading (before Readability flattens them)
+  try {
+    preprocessTablesForTTS(documentClone);
+  } catch (error) {
+    // Log but don't fail - tables are enhancement, not critical
+    console.warn('[SimpleReader] Table preprocessing failed:', error);
+  }
 
   const reader = new Readability(documentClone, {
     charThreshold: 500, // Minimum content length
