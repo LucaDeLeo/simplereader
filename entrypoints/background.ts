@@ -294,6 +294,27 @@ function handleTTSError(error: string): void {
 }
 
 // ============================================
+// Toggle Playback (shared by icon click & keyboard shortcut)
+// ============================================
+
+async function handleTogglePlayback(tabId: number): Promise<void> {
+  switch (playback.state) {
+    case 'stopped':
+      await startPlayback(tabId);
+      break;
+    case 'playing':
+      pausePlayback();
+      break;
+    case 'paused':
+      resumePlayback();
+      break;
+    case 'loading':
+      console.log('[SimpleReader] Already loading, ignoring toggle');
+      break;
+  }
+}
+
+// ============================================
 // Main Background Script
 // ============================================
 
@@ -311,22 +332,23 @@ export default defineBackground(() => {
   // Icon click handler - toggle playback
   chrome.action.onClicked.addListener(async (tab) => {
     if (!tab.id) return;
+    await handleTogglePlayback(tab.id);
+  });
 
-    // Toggle playback based on current state
-    switch (playback.state) {
-      case 'stopped':
-        await startPlayback(tab.id);
-        break;
-      case 'playing':
-        pausePlayback();
-        break;
-      case 'paused':
-        resumePlayback();
-        break;
-      case 'loading':
-        console.log('[SimpleReader] Already loading, ignoring click');
-        break;
+  // Keyboard shortcut handler (Story 3-1)
+  chrome.commands.onCommand.addListener(async (command) => {
+    if (command !== 'toggle-playback') return;
+
+    console.log('[SimpleReader] Keyboard shortcut triggered');
+
+    // Get active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) {
+      console.log('[SimpleReader] No active tab found');
+      return;
     }
+
+    await handleTogglePlayback(tab.id);
   });
 
   // Set up typed message listener

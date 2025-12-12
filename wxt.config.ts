@@ -14,5 +14,15 @@ export default defineConfig({
       'storage',    // Persist user preferences
       'offscreen',  // Create offscreen document for TTS
     ],
+    // Keyboard shortcuts (Story 3-1)
+    commands: {
+      'toggle-playback': {
+        suggested_key: {
+          default: 'Alt+Shift+P',
+          mac: 'Alt+Shift+P',
+        },
+        description: 'Toggle SimpleReader playback',
+      },
+    },
   },
 });

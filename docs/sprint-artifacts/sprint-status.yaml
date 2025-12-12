@@ -61,8 +61,8 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Playback Controls & Mini-Player
-  epic-3: backlog
-  3-1-keyboard-shortcut-for-quick-start: backlog
+  epic-3: in-progress
+  3-1-keyboard-shortcut-for-quick-start: done
   3-2-playback-speed-control: backlog
   3-3-floating-mini-player-ui: backlog
   3-4-position-indicator-when-paused: backlog
