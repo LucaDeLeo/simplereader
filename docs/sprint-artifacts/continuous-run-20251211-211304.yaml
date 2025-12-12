@@ -33,11 +33,13 @@ completed_stories:
     commit: "4d17125"
   - story_key: "1-3-create-typed-message-protocol-foundation"
     commit: "b9e0351"
+  - story_key: "1-4-create-storage-keys-and-helpers"
+    commit: "9bc7b20"
 
 checkpoint:
-  story_key: "1-4-create-storage-keys-and-helpers"
+  story_key: "1-5-create-error-handling-foundation"
   phase: "implement"
-  saved_at: "2025-12-11T21:27:00Z"
+  saved_at: "2025-12-11T21:31:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-4-create-storage-keys-and-helpers.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-5-create-error-handling-foundation.md"
     review_cycles: 0
