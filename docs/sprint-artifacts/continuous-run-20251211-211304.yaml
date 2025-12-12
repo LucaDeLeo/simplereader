@@ -35,11 +35,13 @@ completed_stories:
     commit: "b9e0351"
   - story_key: "1-4-create-storage-keys-and-helpers"
     commit: "9bc7b20"
+  - story_key: "1-5-create-error-handling-foundation"
+    commit: "5540375"
 
 checkpoint:
-  story_key: "1-5-create-error-handling-foundation"
+  story_key: "1-6-create-extension-entrypoint-skeletons"
   phase: "implement"
-  saved_at: "2025-12-11T21:31:00Z"
+  saved_at: "2025-12-11T21:36:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-5-create-error-handling-foundation.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-6-create-extension-entrypoint-skeletons.md"
     review_cycles: 0

@@ -45,7 +45,7 @@ development_status:
   1-2-configure-manifest-for-wasm-and-required-permissions: done
   1-3-create-typed-message-protocol-foundation: done
   1-4-create-storage-keys-and-helpers: done
-  1-5-create-error-handling-foundation: backlog
+  1-5-create-error-handling-foundation: done
   1-6-create-extension-entrypoint-skeletons: backlog
   epic-1-retrospective: optional
 
