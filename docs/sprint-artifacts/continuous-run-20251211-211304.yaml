@@ -1,0 +1,38 @@
+# Continuous Story Run
+# Started: 2025-12-11T21:13:04Z
+# Project: simplereader
+
+run_id: "20251211-211304"
+started_at: "2025-12-11T21:13:04Z"
+status: in_progress
+
+queue:
+  - story_key: "1-1-initialize-wxt-project-with-react-template"
+    epic_id: "1"
+    initial_status: backlog
+  - story_key: "1-2-configure-manifest-for-wasm-and-required-permissions"
+    epic_id: "1"
+    initial_status: backlog
+  - story_key: "1-3-create-typed-message-protocol-foundation"
+    epic_id: "1"
+    initial_status: backlog
+  - story_key: "1-4-create-storage-keys-and-helpers"
+    epic_id: "1"
+    initial_status: backlog
+  - story_key: "1-5-create-error-handling-foundation"
+    epic_id: "1"
+    initial_status: backlog
+  - story_key: "1-6-create-extension-entrypoint-skeletons"
+    epic_id: "1"
+    initial_status: backlog
+
+completed_stories: []
+failed_story: null
+
+checkpoint:
+  story_key: "1-1-initialize-wxt-project-with-react-template"
+  phase: "implement"
+  saved_at: "2025-12-11T21:14:00Z"
+  data:
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-1-initialize-wxt-project-with-react-template.md"
+    review_cycles: 0

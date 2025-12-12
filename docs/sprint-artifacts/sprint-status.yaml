@@ -1,0 +1,109 @@
+# generated: 2025-12-11
+# project: simplereader
+# tracking_system: file-system
+# story_location: docs/sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder
+#   - ready-for-dev: Draft approved and story context created
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically drafts next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2025-12-11
+project: simplereader
+tracking_system: file-system
+story_location: docs/sprint-artifacts
+
+development_status:
+  # Epic 1: Project Setup & Architecture Foundation
+  epic-1: backlog
+  1-1-initialize-wxt-project-with-react-template: backlog
+  1-2-configure-manifest-for-wasm-and-required-permissions: backlog
+  1-3-create-typed-message-protocol-foundation: backlog
+  1-4-create-storage-keys-and-helpers: backlog
+  1-5-create-error-handling-foundation: backlog
+  1-6-create-extension-entrypoint-skeletons: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: First Play Experience (The Magic Moment)
+  epic-2: backlog
+  2-1-content-extraction-with-mozilla-readability: backlog
+  2-2-offscreen-document-setup-with-lifecycle-management: backlog
+  2-3-kokoro-tts-integration-with-model-loading: backlog
+  2-4-tts-fallback-chain-wasm-and-web-speech-api: backlog
+  2-5-word-tokenization-and-timing-calculation: backlog
+  2-6-word-highlighting-with-synchronized-scrolling: backlog
+  2-7-basic-playback-controls-play-pause-stop-from-icon: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Playback Controls & Mini-Player
+  epic-3: backlog
+  3-1-keyboard-shortcut-for-quick-start: backlog
+  3-2-playback-speed-control: backlog
+  3-3-floating-mini-player-ui: backlog
+  3-4-position-indicator-when-paused: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: User Preferences & Settings
+  epic-4: backlog
+  4-1-settings-popup-ui: backlog
+  4-2-voice-selection: backlog
+  4-3-speed-preference-persistence: backlog
+  4-4-highlight-color-customization: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Content Intelligence
+  epic-5: backlog
+  5-1-table-reading-row-by-row: backlog
+  5-2-code-block-handling: backlog
+  5-3-selected-text-reading: backlog
+  5-4-visual-distinction-for-spoken-words: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Model Management & Performance
+  epic-6: backlog
+  6-1-download-progress-indication: backlog
+  6-2-offline-model-caching: backlog
+  6-3-memory-management-and-model-unloading: backlog
+  6-4-device-capability-detection: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Accessibility
+  epic-7: backlog
+  7-1-keyboard-navigation-for-all-controls: backlog
+  7-2-screen-reader-compatibility: backlog
+  7-3-reduced-motion-support: backlog
+  7-4-contrast-and-visual-accessibility: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Testing & Chrome Web Store Release
+  epic-8: backlog
+  8-1-unit-test-suite-setup: backlog
+  8-2-e2e-critical-path-test: backlog
+  8-3-chrome-web-store-preparation: backlog
+  8-4-chrome-web-store-submission: backlog
+  epic-8-retrospective: optional
