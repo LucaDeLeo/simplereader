@@ -42,8 +42,8 @@ development_status:
   # Epic 1: Project Setup & Architecture Foundation
   epic-1: in-progress
   1-1-initialize-wxt-project-with-react-template: done
-  1-2-configure-manifest-for-wasm-and-required-permissions: backlog
-  1-3-create-typed-message-protocol-foundation: backlog
+  1-2-configure-manifest-for-wasm-and-required-permissions: done
+  1-3-create-typed-message-protocol-foundation: ready-for-dev
   1-4-create-storage-keys-and-helpers: backlog
   1-5-create-error-handling-foundation: backlog
   1-6-create-extension-entrypoint-skeletons: backlog
