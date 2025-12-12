@@ -75,6 +75,10 @@ export function MiniPlayer({
       <div className="sr-player__position">
         {isLoading ? (
           <span className="sr-player__loading">Loading...</span>
+        ) : state === 'paused' ? (
+          <span className="sr-player__paused">
+            Paused: {currentPosition.toLocaleString()} / {totalWords.toLocaleString()}
+          </span>
         ) : (
           <span>
             {currentPosition.toLocaleString()} / {totalWords.toLocaleString()}

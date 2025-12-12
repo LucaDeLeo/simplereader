@@ -151,6 +151,9 @@ export function scrollToWord(wordIndex: number): void {
 export function resetHighlight(): void {
   if (!state.initialized) return;
 
+  // Also clear paused state
+  clearPausedState();
+
   requestAnimationFrame(() => {
     // Remove current highlight
     if (state.currentWordIndex !== null && state.wordElements[state.currentWordIndex]) {
@@ -160,6 +163,35 @@ export function resetHighlight(): void {
   });
 
   console.log('[SimpleReader] Highlight reset');
+}
+
+/**
+ * Set paused state on current word (adds pulsing animation).
+ */
+export function setPausedState(paused: boolean): void {
+  if (!state.initialized || state.currentWordIndex === null) return;
+
+  const wordElement = state.wordElements[state.currentWordIndex];
+  if (!wordElement) return;
+
+  if (paused) {
+    wordElement.classList.add('sr-word--paused');
+    console.log(`[SimpleReader] Set paused state on word ${state.currentWordIndex}`);
+  } else {
+    wordElement.classList.remove('sr-word--paused');
+    console.log('[SimpleReader] Cleared paused state');
+  }
+}
+
+/**
+ * Clear paused state from all words.
+ */
+export function clearPausedState(): void {
+  if (!state.initialized) return;
+
+  for (const element of state.wordElements) {
+    element.classList.remove('sr-word--paused');
+  }
 }
 
 /**
@@ -252,10 +284,31 @@ function injectStyles(): void {
       box-shadow: 0 0 0 1px var(--sr-highlight-color);
     }
 
+    /* Paused state - pulsing animation */
+    .sr-word--paused.sr-word--current {
+      animation: sr-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes sr-pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 1px var(--sr-highlight-color);
+      }
+      50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 0 3px var(--sr-highlight-color);
+      }
+    }
+
     /* Respect reduced motion preference */
     @media (prefers-reduced-motion: reduce) {
       .sr-word {
         transition: none;
+      }
+      .sr-word--paused.sr-word--current {
+        animation: none;
+        border-bottom: 2px solid var(--sr-highlight-color);
+        box-shadow: 0 0 0 2px var(--sr-highlight-color);
       }
     }
   `;

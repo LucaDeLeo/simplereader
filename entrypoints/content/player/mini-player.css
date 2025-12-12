@@ -78,6 +78,10 @@
   color: #FFA500;
 }
 
+.sr-player__paused {
+  color: #2196F3;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .sr-player__button {

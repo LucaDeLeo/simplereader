@@ -11,6 +11,8 @@ import {
   scrollToWord,
   resetHighlight,
   getWordCount,
+  setPausedState,
+  clearPausedState,
 } from './highlighter';
 import { isExtensionError } from '@/lib/errors';
 import {
@@ -71,6 +73,14 @@ export default defineContentScript({
             const totalWords = getWordCount();
             setTotalWords(totalWords);
             updatePlayerState(message.state, message.position);
+
+            // Handle paused state animation
+            if (message.state === 'paused') {
+              setPausedState(true);
+            } else {
+              clearPausedState();
+            }
+
             sendResponse({ success: true });
             return false;
         }
