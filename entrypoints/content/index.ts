@@ -96,7 +96,7 @@ async function handleContentExtract(sendResponse: (response: ContentExtractRespo
     console.log('[SimpleReader] Starting content extraction...');
     const startTime = performance.now();
 
-    const { text, title, wordCount } = extractContent();
+    const { text, title, wordCount } = await extractContent();
 
     // Find the article element for highlighting
     // Readability clones the document, so we need to find the original article

@@ -1,6 +1,7 @@
 import { Readability, isProbablyReaderable } from '@mozilla/readability';
 import { createContentError, ERROR_CODES } from '@/lib/errors';
 import { preprocessTablesForTTS } from './table-processor';
+import { preprocessCodeBlocksForTTS } from './code-processor';
 
 export interface ExtractedContent {
   text: string;
@@ -17,7 +18,7 @@ const MIN_WORD_COUNT = 50;
  *
  * @throws ExtensionError if extraction fails
  */
-export function extractContent(): ExtractedContent {
+export async function extractContent(): Promise<ExtractedContent> {
   // Quick readability check
   if (!isProbablyReaderable(document)) {
     throw createContentError(
@@ -36,6 +37,14 @@ export function extractContent(): ExtractedContent {
   } catch (error) {
     // Log but don't fail - tables are enhancement, not critical
     console.warn('[SimpleReader] Table preprocessing failed:', error);
+  }
+
+  // Pre-process code blocks for TTS-friendly reading
+  try {
+    await preprocessCodeBlocksForTTS(documentClone);
+  } catch (error) {
+    // Log but don't fail - code preprocessing is enhancement, not critical
+    console.warn('[SimpleReader] Code block preprocessing failed:', error);
   }
 
   const reader = new Readability(documentClone, {
