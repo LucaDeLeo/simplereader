@@ -6,32 +6,6 @@ run_id: "20251211-211304"
 started_at: "2025-12-11T21:13:04Z"
 status: in_progress
 
-queue:
-  - story_key: "1-1-initialize-wxt-project-with-react-template"
-    epic_id: "1"
-    initial_status: backlog
-  - story_key: "1-2-configure-manifest-for-wasm-and-required-permissions"
-    epic_id: "1"
-    initial_status: backlog
-  - story_key: "1-3-create-typed-message-protocol-foundation"
-    epic_id: "1"
-    initial_status: backlog
-  - story_key: "1-4-create-storage-keys-and-helpers"
-    epic_id: "1"
-    initial_status: backlog
-  - story_key: "1-5-create-error-handling-foundation"
-    epic_id: "1"
-    initial_status: backlog
-  - story_key: "1-6-create-extension-entrypoint-skeletons"
-    epic_id: "1"
-    initial_status: backlog
-  - story_key: "2-1-content-extraction-with-mozilla-readability"
-    epic_id: "2"
-    initial_status: backlog
-  - story_key: "2-2-offscreen-document-setup-with-lifecycle-management"
-    epic_id: "2"
-    initial_status: backlog
-
 completed_stories:
   - story_key: "1-1-initialize-wxt-project-with-react-template"
     commit: "2bd3312"
@@ -47,11 +21,13 @@ completed_stories:
     commit: "3afb5b2"
   - story_key: "2-1-content-extraction-with-mozilla-readability"
     commit: "646061f"
+  - story_key: "2-2-offscreen-document-setup-with-lifecycle-management"
+    commit: "e7255dc"
 
 checkpoint:
-  story_key: "2-2-offscreen-document-setup-with-lifecycle-management"
+  story_key: "2-3-kokoro-tts-integration-with-model-loading"
   phase: "implement"
-  saved_at: "2025-12-11T21:55:00Z"
+  saved_at: "2025-12-11T22:05:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-2-offscreen-document-setup-with-lifecycle-management.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-3-kokoro-tts-integration-with-model-loading.md"
     review_cycles: 0
