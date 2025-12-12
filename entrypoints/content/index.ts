@@ -1,12 +1,23 @@
-import { addMessageListener, isHighlightMessage, isContentMessage } from '@/lib/messages';
+import {
+  addMessageListener,
+  isHighlightMessage,
+  isContentMessage,
+  isPlaybackMessage,
+} from '@/lib/messages';
 import { extractContent, ExtractedContent } from './extractor';
 import {
   initializeHighlighter,
   highlightWord,
   scrollToWord,
   resetHighlight,
+  getWordCount,
 } from './highlighter';
 import { isExtensionError } from '@/lib/errors';
+import {
+  initializePlayer,
+  updatePlayerState,
+  setTotalWords,
+} from './player';
 
 interface ContentExtractResponse {
   success: boolean;
@@ -18,6 +29,9 @@ export default defineContentScript({
   matches: ['<all_urls>'],
   main() {
     console.log('[SimpleReader] Content script loaded');
+
+    // Initialize player module (creates Shadow DOM container)
+    initializePlayer();
 
     // Listen for messages from background
     addMessageListener((message, _sender, sendResponse) => {
@@ -43,6 +57,20 @@ export default defineContentScript({
 
           case 'HIGHLIGHT_SCROLL_TO':
             scrollToWord(message.wordIndex);
+            sendResponse({ success: true });
+            return false;
+        }
+      }
+
+      if (isPlaybackMessage(message)) {
+        switch (message.type) {
+          case 'PLAYBACK_STATE_CHANGED':
+            console.log('[SimpleReader] Received message: PLAYBACK_STATE_CHANGED');
+            // Update player with new state
+            // Get total word count from highlighter (which tracks wrapped words)
+            const totalWords = getWordCount();
+            setTotalWords(totalWords);
+            updatePlayerState(message.state, message.position);
             sendResponse({ success: true });
             return false;
         }
