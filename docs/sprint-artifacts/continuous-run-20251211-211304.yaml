@@ -25,6 +25,9 @@ queue:
   - story_key: "1-6-create-extension-entrypoint-skeletons"
     epic_id: "1"
     initial_status: backlog
+  - story_key: "2-1-content-extraction-with-mozilla-readability"
+    epic_id: "2"
+    initial_status: backlog
 
 completed_stories:
   - story_key: "1-1-initialize-wxt-project-with-react-template"
@@ -37,11 +40,13 @@ completed_stories:
     commit: "9bc7b20"
   - story_key: "1-5-create-error-handling-foundation"
     commit: "5540375"
+  - story_key: "1-6-create-extension-entrypoint-skeletons"
+    commit: "3afb5b2"
 
 checkpoint:
-  story_key: "1-6-create-extension-entrypoint-skeletons"
+  story_key: "2-1-content-extraction-with-mozilla-readability"
   phase: "implement"
-  saved_at: "2025-12-11T21:36:00Z"
+  saved_at: "2025-12-11T21:45:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/1-6-create-extension-entrypoint-skeletons.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-1-content-extraction-with-mozilla-readability.md"
     review_cycles: 0
