@@ -23,11 +23,13 @@ completed_stories:
     commit: "646061f"
   - story_key: "2-2-offscreen-document-setup-with-lifecycle-management"
     commit: "e7255dc"
+  - story_key: "2-3-kokoro-tts-integration-with-model-loading"
+    commit: "d336290"
 
 checkpoint:
-  story_key: "2-3-kokoro-tts-integration-with-model-loading"
+  story_key: "2-4-tts-fallback-chain-wasm-and-web-speech-api"
   phase: "implement"
-  saved_at: "2025-12-11T22:05:00Z"
+  saved_at: "2025-12-11T22:20:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-3-kokoro-tts-integration-with-model-loading.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-4-tts-fallback-chain-wasm-and-web-speech-api.md"
     review_cycles: 0

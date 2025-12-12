@@ -15,6 +15,15 @@ import {
   type TTSDevice,
   type KokoroVoice,
 } from '@/lib/constants';
+import { setLocalValue, STORAGE_KEYS, type DeviceCapability } from '@/lib/storage';
+import {
+  isWebSpeechAvailable,
+  speak as speakWithWebSpeech,
+  loadVoices as loadWebSpeechVoices,
+  stop as stopWebSpeech,
+  pause as pauseWebSpeech,
+  resume as resumeWebSpeech,
+} from './web-speech';
 
 // Type for Transformers.js progress info
 interface TransformersProgressInfo {
@@ -65,6 +74,10 @@ let ttsInstance: KokoroTTS | null = null;
 let isInitializing = false;
 let currentDevice: TTSDevice | null = null;
 let initializationPromise: Promise<void> | null = null;
+
+// Fallback chain state
+let activeEngine: 'kokoro-webgpu' | 'kokoro-wasm' | 'webspeech' | null = null;
+let deviceCapability: DeviceCapability | null = null;
 
 // ============================================
 // Device Detection
@@ -434,4 +447,236 @@ export async function unloadTTS(): Promise<void> {
     ttsInstance = null;
     currentDevice = null;
   }
+}
+
+// ============================================
+// Fallback Chain Initialization
+// ============================================
+
+/**
+ * Initialize Kokoro with a specific device.
+ */
+async function initializeKokoroWithDevice(
+  device: TTSDevice,
+  onProgress?: ProgressCallback
+): Promise<void> {
+  // Reset existing instance if switching devices
+  if (ttsInstance) {
+    ttsInstance = null;
+  }
+
+  console.log(`[SimpleReader] Initializing Kokoro TTS with device: ${device}`);
+
+  // Track loading progress
+  let lastProgress = 0;
+
+  ttsInstance = await KokoroTTS.from_pretrained(MODEL_ID, {
+    dtype: MODEL_DTYPE,
+    device,
+    progress_callback: (progressInfo: TransformersProgressInfo) => {
+      if (progressInfo.status === 'progress' && progressInfo.progress !== undefined) {
+        const percent = Math.round(progressInfo.progress);
+        if (percent > lastProgress) {
+          lastProgress = percent;
+          onProgress?.(percent);
+        }
+      }
+    },
+  });
+
+  currentDevice = device;
+}
+
+/**
+ * Persist device capability to storage for UI display.
+ */
+async function persistDeviceCapability(capability: DeviceCapability): Promise<void> {
+  try {
+    await setLocalValue(STORAGE_KEYS.deviceCapability, capability);
+    console.log(`[SimpleReader] Device capability stored: ${capability}`);
+  } catch (error) {
+    console.warn('[SimpleReader] Failed to persist device capability:', error);
+  }
+}
+
+/**
+ * Initialize TTS with automatic fallback chain.
+ * Tries: WebGPU -> WASM -> Web Speech API
+ */
+export async function initializeTTSWithFallback(
+  onProgress?: ProgressCallback
+): Promise<DeviceCapability> {
+  // Try Kokoro WebGPU first
+  try {
+    console.log('[SimpleReader] Attempting Kokoro WebGPU initialization...');
+    await initializeKokoroWithDevice('webgpu', onProgress);
+    activeEngine = 'kokoro-webgpu';
+    deviceCapability = 'webgpu';
+    await persistDeviceCapability('webgpu');
+    console.log('[SimpleReader] TTS initialized with Kokoro WebGPU');
+    return 'webgpu';
+  } catch (webgpuError) {
+    console.warn('[SimpleReader] WebGPU initialization failed:', webgpuError);
+  }
+
+  // Try Kokoro WASM fallback
+  try {
+    console.log('[SimpleReader] Attempting Kokoro WASM fallback...');
+    await initializeKokoroWithDevice('wasm', onProgress);
+    activeEngine = 'kokoro-wasm';
+    deviceCapability = 'wasm';
+    await persistDeviceCapability('wasm');
+    console.log('[SimpleReader] TTS initialized with Kokoro WASM');
+    return 'wasm';
+  } catch (wasmError) {
+    console.warn('[SimpleReader] WASM initialization failed:', wasmError);
+  }
+
+  // Final fallback: Web Speech API
+  if (isWebSpeechAvailable()) {
+    console.log('[SimpleReader] Falling back to Web Speech API');
+    await loadWebSpeechVoices();
+    activeEngine = 'webspeech';
+    deviceCapability = 'webspeech';
+    await persistDeviceCapability('webspeech');
+    onProgress?.(100);
+    console.log('[SimpleReader] TTS initialized with Web Speech API');
+    return 'webspeech';
+  }
+
+  // All fallbacks failed
+  throw createTTSError(
+    ERROR_CODES.TTS_MODEL_LOAD_FAILED,
+    'All TTS engines failed to initialize. WebGPU, WASM, and Web Speech API are unavailable.',
+    false
+  );
+}
+
+// ============================================
+// Unified Speech Generation
+// ============================================
+
+/**
+ * Generate speech using Web Speech API.
+ */
+async function generateWithWebSpeech(
+  text: string,
+  speed: number,
+  onWord?: (timing: WordTiming) => void
+): Promise<GenerationResult> {
+  console.log('[SimpleReader] Generating speech with Web Speech API');
+
+  const result = await speakWithWebSpeech(text, '', speed, {
+    onWord,
+    onEnd: () => {
+      console.log('[SimpleReader] Web Speech generation complete');
+    },
+  });
+
+  // Web Speech doesn't provide raw audio, but we still return timing data
+  // The actual audio plays directly through the browser
+  return {
+    audio: new Float32Array(0), // No raw audio for Web Speech
+    phonemes: '', // No phoneme data for Web Speech
+    wordTimings: result.wordTimings,
+    sampleRate: 0, // Not applicable for Web Speech
+  };
+}
+
+/**
+ * Generate speech using the active engine (Kokoro or Web Speech).
+ * Automatically uses the initialized engine from fallback chain.
+ */
+export async function generateSpeechWithFallback(
+  text: string,
+  voice: string = DEFAULT_VOICE,
+  speed: number = 1.0,
+  onChunk?: (chunk: GenerationChunk) => void,
+  onProgress?: ProgressCallback,
+  onWord?: (timing: WordTiming) => void
+): Promise<GenerationResult> {
+  // Ensure TTS is initialized
+  if (!activeEngine) {
+    await initializeTTSWithFallback(onProgress);
+  }
+
+  // Route to appropriate engine
+  if (activeEngine === 'webspeech') {
+    return generateWithWebSpeech(text, speed, onWord);
+  }
+
+  // Use Kokoro (WebGPU or WASM)
+  try {
+    return await generateSpeech(text, voice, speed, onChunk, onProgress);
+  } catch (kokoroError) {
+    console.error('[SimpleReader] Kokoro generation failed, trying Web Speech:', kokoroError);
+
+    // Try Web Speech as runtime fallback
+    if (isWebSpeechAvailable()) {
+      activeEngine = 'webspeech';
+      deviceCapability = 'webspeech';
+      await persistDeviceCapability('webspeech');
+      return generateWithWebSpeech(text, speed, onWord);
+    }
+
+    throw kokoroError;
+  }
+}
+
+// ============================================
+// Engine Status and Control
+// ============================================
+
+/**
+ * Get current active TTS engine.
+ */
+export function getActiveEngine(): typeof activeEngine {
+  return activeEngine;
+}
+
+/**
+ * Get device capability.
+ */
+export function getDeviceCapability(): DeviceCapability | null {
+  return deviceCapability;
+}
+
+/**
+ * Get extended model status including active engine.
+ */
+export function getExtendedModelStatus(): ModelStatus & { activeEngine: typeof activeEngine } {
+  return {
+    ...getModelStatus(),
+    activeEngine,
+  };
+}
+
+/**
+ * Stop current TTS playback (routes to correct engine).
+ */
+export function stopCurrentPlayback(): void {
+  if (activeEngine === 'webspeech') {
+    stopWebSpeech();
+  }
+  // Kokoro audio playback is handled externally by audio player
+}
+
+/**
+ * Pause current TTS playback (routes to correct engine).
+ */
+export function pauseCurrentPlayback(): void {
+  if (activeEngine === 'webspeech') {
+    pauseWebSpeech();
+  }
+  // Kokoro audio playback is handled externally by audio player
+}
+
+/**
+ * Resume current TTS playback (routes to correct engine).
+ */
+export function resumeCurrentPlayback(): void {
+  if (activeEngine === 'webspeech') {
+    resumeWebSpeech();
+  }
+  // Kokoro audio playback is handled externally by audio player
 }

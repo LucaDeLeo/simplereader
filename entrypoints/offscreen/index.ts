@@ -4,12 +4,25 @@
 import {
   addMessageListener,
   isTTSMessage,
+  isPlaybackMessage,
   type TTSMessage,
+  type PlaybackMessage,
+  type Message,
   type MessageResponse,
   Messages,
 } from '@/lib/messages';
 import { isExtensionError, serializeError } from '@/lib/errors';
-import { initializeTTS, generateSpeech, getModelStatus, type GenerationChunk } from './tts-engine';
+import {
+  initializeTTSWithFallback,
+  generateSpeechWithFallback,
+  getModelStatus,
+  getActiveEngine,
+  getDeviceCapability,
+  stopCurrentPlayback,
+  pauseCurrentPlayback,
+  resumeCurrentPlayback,
+  type GenerationChunk,
+} from './tts-engine';
 
 console.log('[SimpleReader] Offscreen document loaded');
 
@@ -48,12 +61,18 @@ function stopKeepAlive(): void {
 // Message Handling
 // ============================================
 
-// Listen for TTS messages from background
+// Listen for TTS and playback messages from background
 addMessageListener((message, _sender, sendResponse) => {
   if (isTTSMessage(message)) {
     handleTTSMessage(message, sendResponse);
     return true; // Async response
   }
+
+  if (isPlaybackMessage(message)) {
+    handlePlaybackMessage(message, sendResponse);
+    return true; // Sync response but need true for proper handling
+  }
+
   return false;
 });
 
@@ -89,6 +108,7 @@ async function handleTTSMessage(
 /**
  * Handle TTS_GENERATE message.
  * Initializes model if needed, generates speech with streaming chunks.
+ * Uses fallback chain: WebGPU -> WASM -> Web Speech API.
  */
 async function handleTTSGenerate(
   message: Extract<TTSMessage, { type: 'TTS_GENERATE' }>,
@@ -103,28 +123,35 @@ async function handleTTSGenerate(
       speed: message.speed,
     });
 
-    // Initialize TTS if needed (with progress reporting)
-    const status = getModelStatus();
-    if (!status.loaded) {
-      console.log('[SimpleReader] Model not loaded, initializing...');
-      await initializeTTS((progress) => {
-        // Send loading progress to background (0-50% range for loading)
-        sendProgressMessage(Math.round(progress * 0.5));
-      });
-    }
+    // Initialize TTS with fallback chain
+    const capability = await initializeTTSWithFallback((progress) => {
+      // Send loading progress to background (0-50% range for loading)
+      sendProgressMessage(Math.round(progress * 0.5));
+    });
 
-    // Generate speech with chunk callbacks
-    const result = await generateSpeech(
+    console.log(`[SimpleReader] Using TTS engine: ${getActiveEngine()} (capability: ${capability})`);
+
+    // Generate speech with fallback support
+    const result = await generateSpeechWithFallback(
       message.text,
       message.voice,
       message.speed,
-      // Chunk callback - send each chunk as it's generated
+      // Chunk callback - send each chunk as it's generated (only for Kokoro)
       (chunk: GenerationChunk) => {
-        sendChunkMessage(chunk);
+        // Only send chunks for Kokoro (Web Speech plays directly)
+        if (getActiveEngine() !== 'webspeech') {
+          sendChunkMessage(chunk);
+        }
       },
       // Progress callback (50-100% range for generation)
       (progress) => {
         sendProgressMessage(50 + Math.round(progress * 0.5));
+      },
+      // Word callback for real-time Web Speech highlighting
+      (timing) => {
+        if (getActiveEngine() === 'webspeech') {
+          sendWordHighlightMessage(timing.index);
+        }
       }
     );
 
@@ -132,10 +159,12 @@ async function handleTTSGenerate(
     sendCompleteMessage();
 
     // Log completion info
+    const sampleRate = result.sampleRate || 24000; // Fallback for Web Speech
     console.log('[SimpleReader] TTS complete:', {
       wordCount: result.wordTimings.length,
-      durationSeconds: result.audio.length / result.sampleRate,
-      device: getModelStatus().device,
+      durationSeconds: result.audio.length > 0 ? result.audio.length / sampleRate : 'N/A (Web Speech)',
+      engine: getActiveEngine(),
+      capability: getDeviceCapability(),
     });
 
     sendResponse({ success: true });
@@ -161,6 +190,44 @@ async function handleTTSGenerate(
   } finally {
     stopKeepAlive();
   }
+}
+
+/**
+ * Handle playback control messages for Web Speech API.
+ * Routes pause/resume/stop to the current TTS engine.
+ */
+function handlePlaybackMessage(
+  message: PlaybackMessage,
+  sendResponse: (response: MessageResponse) => void
+): void {
+  // Only handle if Web Speech is active (Kokoro audio is handled externally)
+  if (getActiveEngine() !== 'webspeech') {
+    sendResponse({ success: true });
+    return;
+  }
+
+  switch (message.type) {
+    case 'PLAYBACK_PLAY':
+      resumeCurrentPlayback();
+      console.log('[SimpleReader] Web Speech playback resumed');
+      break;
+
+    case 'PLAYBACK_PAUSE':
+      pauseCurrentPlayback();
+      console.log('[SimpleReader] Web Speech playback paused');
+      break;
+
+    case 'PLAYBACK_STOP':
+      stopCurrentPlayback();
+      console.log('[SimpleReader] Web Speech playback stopped');
+      break;
+
+    default:
+      // PLAYBACK_STATE_CHANGED is informational, no action needed
+      break;
+  }
+
+  sendResponse({ success: true });
 }
 
 // ============================================
@@ -215,6 +282,17 @@ function sendErrorMessage(error: string): void {
     chrome.runtime.sendMessage(Messages.ttsError(error));
   } catch (e) {
     console.warn('[SimpleReader] Failed to send error message:', e);
+  }
+}
+
+/**
+ * Send HIGHLIGHT_WORD message to background for Web Speech real-time highlighting.
+ */
+function sendWordHighlightMessage(wordIndex: number): void {
+  try {
+    chrome.runtime.sendMessage(Messages.highlightWord(wordIndex));
+  } catch (e) {
+    console.warn('[SimpleReader] Failed to send word highlight message:', e);
   }
 }
 
