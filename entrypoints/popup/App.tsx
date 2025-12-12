@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { STORAGE_KEYS, getSyncValue } from '@/lib/storage';
+import { STORAGE_KEYS, getSyncValue, setSyncValue } from '@/lib/storage';
 import { Messages, type PlaybackState, type Message } from '@/lib/messages';
+import { MIN_SPEED, MAX_SPEED, DEFAULT_SPEED } from '@/lib/constants';
 import './App.css';
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
       const voice = await getSyncValue(STORAGE_KEYS.preferredVoice);
       const speedValue = await getSyncValue(STORAGE_KEYS.preferredSpeed);
       if (voice) setVoiceName(voice);
-      if (speedValue !== undefined) setSpeed(speedValue);
+      setSpeed(speedValue ?? DEFAULT_SPEED);
     }
     loadSettings();
 
@@ -46,6 +47,11 @@ function App() {
 
   const handleStop = () => {
     chrome.runtime.sendMessage(Messages.playbackStop());
+  };
+
+  const handleSpeedChange = async (newSpeed: number) => {
+    setSpeed(newSpeed);
+    await setSyncValue(STORAGE_KEYS.preferredSpeed, newSpeed);
   };
 
   return (
@@ -110,9 +116,23 @@ function App() {
         {playbackState === 'paused' && 'Paused'}
       </div>
 
+      {speed !== null && (
+        <div className="speed-control">
+          <label htmlFor="sr-speed-slider">Speed: {speed}x</label>
+          <input
+            type="range"
+            id="sr-speed-slider"
+            min={MIN_SPEED}
+            max={MAX_SPEED}
+            step={0.25}
+            value={speed}
+            onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+          />
+        </div>
+      )}
+
       <div className="settings-info">
         {voiceName && <span className="setting">Voice: {formatVoiceName(voiceName)}</span>}
-        {speed !== null && <span className="setting">Speed: {speed}x</span>}
       </div>
     </div>
   );
