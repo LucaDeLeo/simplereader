@@ -54,7 +54,7 @@ development_status:
   2-1-content-extraction-with-mozilla-readability: done
   2-2-offscreen-document-setup-with-lifecycle-management: done
   2-3-kokoro-tts-integration-with-model-loading: done
-  2-4-tts-fallback-chain-wasm-and-web-speech-api: backlog
+  2-4-tts-fallback-chain-wasm-and-web-speech-api: done
   2-5-word-tokenization-and-timing-calculation: backlog
   2-6-word-highlighting-with-synchronized-scrolling: backlog
   2-7-basic-playback-controls-play-pause-stop-from-icon: backlog

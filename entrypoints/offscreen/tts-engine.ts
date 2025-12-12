@@ -5,6 +5,7 @@ import { KokoroTTS, TextSplitterStream } from 'kokoro-js';
 import type { RawAudio } from '@huggingface/transformers';
 import type { WordTiming } from '@/lib/messages';
 import { createTTSError, ERROR_CODES } from '@/lib/errors';
+import { calculateWordTimings } from '@/lib/phoneme-timing';
 import {
   MODEL_ID,
   MODEL_DTYPE,
@@ -273,8 +274,8 @@ export async function generateSpeech(
         // Extract audio data - RawAudio has 'audio' property (Float32Array)
         const audioData = (audio as RawAudio).audio;
 
-        // Calculate word timings for this chunk
-        const wordTimings = calculateBasicWordTimings(
+        // Calculate word timings for this chunk using phoneme-weighted algorithm
+        const wordTimings = calculateWordTimings(
           chunkText,
           phonemes,
           totalSamplesProcessed,
@@ -370,45 +371,6 @@ export async function generateSpeech(
       error
     );
   }
-}
-
-// ============================================
-// Word Timing Calculation
-// ============================================
-
-/**
- * Calculate basic word timings from text and audio duration.
- *
- * This is a simplified implementation that distributes time
- * evenly across words. Story 2-5 will implement phoneme-weighted
- * timing for more accurate highlighting.
- *
- * @param text - Text that was synthesized
- * @param phonemes - Phoneme string (for future use)
- * @param sampleOffset - Sample offset from start of full audio
- * @param sampleCount - Number of samples in this chunk
- * @param sampleRate - Audio sample rate
- */
-function calculateBasicWordTimings(
-  text: string,
-  _phonemes: string, // Unused in basic implementation, will be used in Story 2-5
-  sampleOffset: number,
-  sampleCount: number,
-  sampleRate: number
-): WordTiming[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return [];
-
-  const durationMs = (sampleCount / sampleRate) * 1000;
-  const startTimeMs = (sampleOffset / sampleRate) * 1000;
-  const avgWordDuration = durationMs / words.length;
-
-  return words.map((word, i) => ({
-    word,
-    startTime: startTimeMs + i * avgWordDuration,
-    endTime: startTimeMs + (i + 1) * avgWordDuration,
-    index: i, // Will be re-indexed when chunks are combined
-  }));
 }
 
 // ============================================

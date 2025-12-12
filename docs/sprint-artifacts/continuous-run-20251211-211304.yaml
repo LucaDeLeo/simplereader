@@ -25,11 +25,13 @@ completed_stories:
     commit: "e7255dc"
   - story_key: "2-3-kokoro-tts-integration-with-model-loading"
     commit: "d336290"
+  - story_key: "2-4-tts-fallback-chain-wasm-and-web-speech-api"
+    commit: "fd06165"
 
 checkpoint:
-  story_key: "2-4-tts-fallback-chain-wasm-and-web-speech-api"
+  story_key: "2-5-word-tokenization-and-timing-calculation"
   phase: "implement"
-  saved_at: "2025-12-11T22:20:00Z"
+  saved_at: "2025-12-11T22:35:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-4-tts-fallback-chain-wasm-and-web-speech-api.md"
+    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-5-word-tokenization-and-timing-calculation.md"
     review_cycles: 0
