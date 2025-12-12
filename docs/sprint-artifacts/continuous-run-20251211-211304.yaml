@@ -27,11 +27,15 @@ completed_stories:
     commit: "d336290"
   - story_key: "2-4-tts-fallback-chain-wasm-and-web-speech-api"
     commit: "fd06165"
+  - story_key: "2-5-word-tokenization-and-timing-calculation"
+    commit: "179dd06"
+  - story_key: "2-6-word-highlighting-with-synchronized-scrolling"
+    commit: "f782506"
 
 checkpoint:
-  story_key: "2-5-word-tokenization-and-timing-calculation"
-  phase: "implement"
-  saved_at: "2025-12-11T22:35:00Z"
+  story_key: "2-7-basic-playback-controls-play-pause-stop-from-icon"
+  phase: "create"
+  saved_at: "2025-12-11T23:00:00Z"
   data:
-    story_file_path: "/Users/luca/dev/simplereader/docs/sprint-artifacts/stories/2-5-word-tokenization-and-timing-calculation.md"
+    story_file_path: null
     review_cycles: 0

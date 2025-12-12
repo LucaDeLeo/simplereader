@@ -7,7 +7,6 @@ import {
   isPlaybackMessage,
   type TTSMessage,
   type PlaybackMessage,
-  type Message,
   type MessageResponse,
   Messages,
 } from '@/lib/messages';
@@ -15,7 +14,6 @@ import { isExtensionError, serializeError } from '@/lib/errors';
 import {
   initializeTTSWithFallback,
   generateSpeechWithFallback,
-  getModelStatus,
   getActiveEngine,
   getDeviceCapability,
   stopCurrentPlayback,
@@ -23,6 +21,15 @@ import {
   resumeCurrentPlayback,
   type GenerationChunk,
 } from './tts-engine';
+import {
+  queueAudioChunk,
+  pause as pauseAudio,
+  resume as resumeAudio,
+  stop as stopAudio,
+  reset as resetAudio,
+  play as playAudio,
+  onPlaybackEnd,
+} from './audio-player';
 
 console.log('[SimpleReader] Offscreen document loaded');
 
@@ -58,6 +65,16 @@ function stopKeepAlive(): void {
 }
 
 // ============================================
+// Audio Player Callbacks
+// ============================================
+
+// Set up playback end callback to notify background
+onPlaybackEnd(() => {
+  console.log('[SimpleReader] Audio playback ended');
+  sendCompleteMessage();
+});
+
+// ============================================
 // Message Handling
 // ============================================
 
@@ -70,7 +87,7 @@ addMessageListener((message, _sender, sendResponse) => {
 
   if (isPlaybackMessage(message)) {
     handlePlaybackMessage(message, sendResponse);
-    return true; // Sync response but need true for proper handling
+    return false; // Sync response
   }
 
   return false;
@@ -116,6 +133,9 @@ async function handleTTSGenerate(
 ): Promise<void> {
   startKeepAlive();
 
+  // Reset audio player for new generation
+  resetAudio();
+
   try {
     console.log('[SimpleReader] TTS generate requested:', {
       textLength: message.text.length,
@@ -138,8 +158,13 @@ async function handleTTSGenerate(
       message.speed,
       // Chunk callback - send each chunk as it's generated (only for Kokoro)
       (chunk: GenerationChunk) => {
-        // Only send chunks for Kokoro (Web Speech plays directly)
+        // Only process chunks for Kokoro (Web Speech plays directly)
         if (getActiveEngine() !== 'webspeech') {
+          // Queue audio for playback
+          queueAudioChunk(chunk.audio);
+          // Start playing on first chunk
+          playAudio();
+          // Send chunk info to background for timing coordination
           sendChunkMessage(chunk);
         }
       },
@@ -193,33 +218,42 @@ async function handleTTSGenerate(
 }
 
 /**
- * Handle playback control messages for Web Speech API.
- * Routes pause/resume/stop to the current TTS engine.
+ * Handle playback control messages.
+ * Routes to appropriate engine (Kokoro audio player or Web Speech).
  */
 function handlePlaybackMessage(
   message: PlaybackMessage,
   sendResponse: (response: MessageResponse) => void
 ): void {
-  // Only handle if Web Speech is active (Kokoro audio is handled externally)
-  if (getActiveEngine() !== 'webspeech') {
-    sendResponse({ success: true });
-    return;
-  }
+  const engine = getActiveEngine();
 
   switch (message.type) {
     case 'PLAYBACK_PLAY':
-      resumeCurrentPlayback();
-      console.log('[SimpleReader] Web Speech playback resumed');
+      if (engine === 'webspeech') {
+        resumeCurrentPlayback();
+      } else {
+        resumeAudio();
+      }
+      console.log('[SimpleReader] Playback resumed');
       break;
 
     case 'PLAYBACK_PAUSE':
-      pauseCurrentPlayback();
-      console.log('[SimpleReader] Web Speech playback paused');
+      if (engine === 'webspeech') {
+        pauseCurrentPlayback();
+      } else {
+        pauseAudio();
+      }
+      console.log('[SimpleReader] Playback paused');
       break;
 
     case 'PLAYBACK_STOP':
-      stopCurrentPlayback();
-      console.log('[SimpleReader] Web Speech playback stopped');
+      if (engine === 'webspeech') {
+        stopCurrentPlayback();
+      } else {
+        stopAudio();
+        resetAudio();
+      }
+      console.log('[SimpleReader] Playback stopped');
       break;
 
     default:
@@ -303,5 +337,6 @@ function sendWordHighlightMessage(wordIndex: number): void {
 // Cleanup on unload
 globalThis.addEventListener('beforeunload', () => {
   stopKeepAlive();
+  stopAudio();
   console.log('[SimpleReader] Offscreen document unloading');
 });
