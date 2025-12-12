@@ -314,6 +314,139 @@ async function handleTogglePlayback(tabId: number): Promise<void> {
   }
 }
 
+async function handleTogglePlaybackWithSelection(tabId: number): Promise<void> {
+  switch (playback.state) {
+    case 'stopped':
+      // Selection-aware: check selection first, fall back to full article
+      await startPlaybackWithSelection(tabId);
+      break;
+    case 'playing':
+      pausePlayback();
+      break;
+    case 'paused':
+      resumePlayback();
+      break;
+    case 'loading':
+      console.log('[SimpleReader] Already loading, ignoring toggle');
+      break;
+  }
+}
+
+// ============================================
+// Selection-aware Playback
+// ============================================
+
+async function startPlaybackWithSelection(tabId: number): Promise<void> {
+  if (playback.state === 'loading' || playback.state === 'playing') {
+    console.log('[SimpleReader] Playback already in progress');
+    return;
+  }
+
+  playback.tabId = tabId;
+  playback.wordTimings = [];
+  playback.currentWordIndex = 0;
+  playback.audioStartTime = null;
+  playback.accumulatedAudioDurationMs = 0;
+  setPlaybackState('loading');
+
+  try {
+    // Try to get selection first
+    const selectionResponse = await sendMessageToTab<{ text: string; wordCount: number } | null>(
+      tabId,
+      Messages.contentExtractSelection()
+    );
+
+    let text: string;
+    let wordCount: number;
+
+    if (selectionResponse.success && selectionResponse.data) {
+      // Use selection
+      text = selectionResponse.data.text;
+      wordCount = selectionResponse.data.wordCount;
+      console.log(`[SimpleReader] Using selection: ${wordCount} words`);
+    } else {
+      // Fall back to full extraction
+      console.log('[SimpleReader] No selection, extracting full content...');
+      const extractResponse = await sendMessageToTab<{ text: string; title?: string; wordCount: number }>(
+        tabId,
+        Messages.contentExtract()
+      );
+
+      if (!extractResponse.success || !extractResponse.data) {
+        throw new Error(extractResponse.error || 'Content extraction failed');
+      }
+
+      text = extractResponse.data.text;
+      wordCount = extractResponse.data.wordCount;
+    }
+
+    console.log(`[SimpleReader] Extracted ${wordCount} words`);
+
+    // Ensure offscreen document exists
+    await ensureOffscreenDocument();
+
+    // Get preferred voice and speed from storage
+    const voice = await getSyncValue(STORAGE_KEYS.preferredVoice) || 'af_bella';
+    const speed = await getSyncValue(STORAGE_KEYS.preferredSpeed) || 1.0;
+
+    // Request TTS generation
+    console.log('[SimpleReader] Starting TTS generation...');
+    chrome.runtime.sendMessage(Messages.ttsGenerate(text, voice, speed)).catch((error) => {
+      console.error('[SimpleReader] TTS request failed:', error);
+      stopPlayback();
+    });
+
+  } catch (error) {
+    console.error('[SimpleReader] Playback start failed:', error);
+    stopPlayback();
+  }
+}
+
+async function startPlaybackSelectionOnly(tabId: number): Promise<void> {
+  // Only start if there's a selection - don't fall back to full article
+  if (playback.state === 'loading' || playback.state === 'playing') {
+    console.log('[SimpleReader] Playback already in progress');
+    return;
+  }
+
+  playback.tabId = tabId;
+  playback.wordTimings = [];
+  playback.currentWordIndex = 0;
+  playback.audioStartTime = null;
+  playback.accumulatedAudioDurationMs = 0;
+  setPlaybackState('loading');
+
+  try {
+    const selectionResponse = await sendMessageToTab<{ text: string; wordCount: number } | null>(
+      tabId,
+      Messages.contentExtractSelection()
+    );
+
+    if (!selectionResponse.success || !selectionResponse.data) {
+      console.log('[SimpleReader] No selection for read-selection command');
+      setPlaybackState('stopped');
+      return;
+    }
+
+    const { text, wordCount } = selectionResponse.data;
+    console.log(`[SimpleReader] Reading selection: ${wordCount} words`);
+
+    await ensureOffscreenDocument();
+
+    const voice = await getSyncValue(STORAGE_KEYS.preferredVoice) || 'af_bella';
+    const speed = await getSyncValue(STORAGE_KEYS.preferredSpeed) || 1.0;
+
+    chrome.runtime.sendMessage(Messages.ttsGenerate(text, voice, speed)).catch((error) => {
+      console.error('[SimpleReader] TTS request failed:', error);
+      stopPlayback();
+    });
+
+  } catch (error) {
+    console.error('[SimpleReader] Selection playback failed:', error);
+    stopPlayback();
+  }
+}
+
 // ============================================
 // Main Background Script
 // ============================================
@@ -321,11 +454,27 @@ async function handleTogglePlayback(tabId: number): Promise<void> {
 export default defineBackground(() => {
   console.log('[SimpleReader] Background service worker started');
 
-  // Initialize defaults on first install
+  // Initialize defaults on first install and create context menu
   chrome.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
       console.log('[SimpleReader] First install - initializing defaults');
       await initializeDefaults();
+    }
+
+    // Create context menu for selected text (Story 5-3)
+    chrome.contextMenus.create({
+      id: 'read-selection',
+      title: 'Read with SimpleReader',
+      contexts: ['selection'],
+    });
+    console.log('[SimpleReader] Context menu created');
+  });
+
+  // Context menu click handler (Story 5-3)
+  chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+    if (info.menuItemId === 'read-selection' && tab?.id) {
+      console.log('[SimpleReader] Context menu: Read selection');
+      await startPlaybackWithSelection(tab.id);
     }
   });
 
@@ -335,11 +484,9 @@ export default defineBackground(() => {
     await handleTogglePlayback(tab.id);
   });
 
-  // Keyboard shortcut handler (Story 3-1)
+  // Keyboard shortcut handler (Story 3-1, Story 5-3)
   chrome.commands.onCommand.addListener(async (command) => {
-    if (command !== 'toggle-playback') return;
-
-    console.log('[SimpleReader] Keyboard shortcut triggered');
+    console.log(`[SimpleReader] Keyboard shortcut triggered: ${command}`);
 
     // Get active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -348,7 +495,13 @@ export default defineBackground(() => {
       return;
     }
 
-    await handleTogglePlayback(tab.id);
+    if (command === 'toggle-playback') {
+      // Selection-aware toggle - checks selection first, falls back to full article
+      await handleTogglePlaybackWithSelection(tab.id);
+    } else if (command === 'read-selection') {
+      // Selection-only - does nothing if no selection
+      await startPlaybackSelectionOnly(tab.id);
+    }
   });
 
   // Set up typed message listener

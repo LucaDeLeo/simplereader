@@ -41,6 +41,7 @@ export type HighlightMessage =
 // Content Extraction Messages (Content <-> Background)
 export type ContentMessage =
   | { type: 'CONTENT_EXTRACT' }
+  | { type: 'CONTENT_EXTRACT_SELECTION' }
   | { type: 'CONTENT_READY'; text: string; wordCount: number; title?: string }
   | { type: 'CONTENT_ERROR'; error: string };
 
@@ -230,6 +231,7 @@ export const Messages = {
 
   // Content
   contentExtract: (): ContentMessage => ({ type: 'CONTENT_EXTRACT' }),
+  contentExtractSelection: (): ContentMessage => ({ type: 'CONTENT_EXTRACT_SELECTION' }),
   contentReady: (text: string, wordCount: number, title?: string): ContentMessage => ({
     type: 'CONTENT_READY',
     text,

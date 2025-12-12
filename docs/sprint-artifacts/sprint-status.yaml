@@ -80,7 +80,7 @@ development_status:
   epic-5: in-progress
   5-1-table-reading-row-by-row: done
   5-2-code-block-handling: done
-  5-3-selected-text-reading: backlog
+  5-3-selected-text-reading: done
   5-4-visual-distinction-for-spoken-words: backlog
   epic-5-retrospective: optional
 

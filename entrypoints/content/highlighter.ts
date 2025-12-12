@@ -384,6 +384,125 @@ function wrapWordsInElement(element: Element): HTMLSpanElement[] {
   return wordElements;
 }
 
+/**
+ * Initialize highlighter for a specific selection range.
+ * Only wraps words within the selection, not the entire article.
+ */
+export async function initializeHighlighterForSelection(
+  container: Element,
+  selectionRange: Range
+): Promise<number> {
+  // Reset any existing highlighting
+  if (state.initialized) {
+    resetHighlight();
+    state.wordElements = [];
+    state.initialized = false;
+  }
+
+  // Load highlight color from storage
+  await loadHighlightColor();
+
+  // Inject styles
+  injectStyles();
+
+  // Set up storage listener for color changes
+  if (!state.unsubscribeStorage) {
+    state.unsubscribeStorage = onStorageChange(
+      STORAGE_KEYS.highlightColor,
+      (newColor) => {
+        if (newColor) {
+          setHighlightColor(newColor);
+        }
+      },
+      'sync'
+    );
+  }
+
+  // Track user scrolling
+  window.addEventListener('scroll', handleUserScroll, { passive: true });
+
+  // Get text nodes within the selection range
+  const textNodes = getTextNodesInRange(selectionRange);
+
+  let wordIndex = 0;
+  const wordElements: HTMLSpanElement[] = [];
+
+  for (const textNode of textNodes) {
+    const text = textNode.textContent || '';
+    const parent = textNode.parentNode;
+    if (!parent) continue;
+
+    // Split into words and whitespace
+    const fragments = text.split(/(\s+)/);
+    const fragment = document.createDocumentFragment();
+
+    for (const part of fragments) {
+      if (/^\s+$/.test(part)) {
+        fragment.appendChild(document.createTextNode(part));
+      } else if (part) {
+        const span = document.createElement('span');
+        span.className = 'sr-word';
+        span.dataset.wordIndex = String(wordIndex);
+        span.textContent = part;
+        fragment.appendChild(span);
+        wordElements.push(span);
+        wordIndex++;
+      }
+    }
+
+    parent.replaceChild(fragment, textNode);
+  }
+
+  state.wordElements = wordElements;
+  state.initialized = true;
+
+  console.log(`[SimpleReader] Selection highlighter initialized: ${wordElements.length} words`);
+  return wordElements.length;
+}
+
+/**
+ * Get all text nodes within a Range.
+ */
+function getTextNodesInRange(range: Range): Text[] {
+  const textNodes: Text[] = [];
+  const container = range.commonAncestorContainer;
+
+  // If the container is a text node itself, return it
+  if (container.nodeType === Node.TEXT_NODE) {
+    return [container as Text];
+  }
+
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        // Check if node intersects with the range
+        if (!range.intersectsNode(node)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        // Skip empty or whitespace-only text nodes
+        if (!node.textContent || !node.textContent.trim()) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        // Skip script and style elements
+        const parent = node.parentElement;
+        if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    }
+  );
+
+  let node: Text | null;
+  while ((node = walker.nextNode() as Text | null)) {
+    textNodes.push(node);
+  }
+
+  return textNodes;
+}
+
 // Export types
 export type { HighlighterState };
 

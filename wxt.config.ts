@@ -13,8 +13,9 @@ export default defineConfig({
       'activeTab',  // Access current tab for content extraction
       'storage',    // Persist user preferences
       'offscreen',  // Create offscreen document for TTS
+      'contextMenus',  // Right-click menu for selection reading (Story 5-3)
     ],
-    // Keyboard shortcuts (Story 3-1)
+    // Keyboard shortcuts (Story 3-1, Story 5-3)
     commands: {
       'toggle-playback': {
         suggested_key: {
@@ -22,6 +23,13 @@ export default defineConfig({
           mac: 'Alt+Shift+P',
         },
         description: 'Toggle SimpleReader playback',
+      },
+      'read-selection': {
+        suggested_key: {
+          default: 'Alt+Shift+S',
+          mac: 'Alt+Shift+S',
+        },
+        description: 'Read selected text with SimpleReader',
       },
     },
   },

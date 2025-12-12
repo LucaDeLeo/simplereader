@@ -7,6 +7,7 @@ import {
 import { extractContent, ExtractedContent } from './extractor';
 import {
   initializeHighlighter,
+  initializeHighlighterForSelection,
   highlightWord,
   scrollToWord,
   resetHighlight,
@@ -14,6 +15,7 @@ import {
   setPausedState,
   clearPausedState,
 } from './highlighter';
+import { extractSelection, getSelectionContainer } from './selection-extractor';
 import { isExtensionError } from '@/lib/errors';
 import {
   initializePlayer,
@@ -41,6 +43,10 @@ export default defineContentScript({
         switch (message.type) {
           case 'CONTENT_EXTRACT':
             handleContentExtract((response) => sendResponse(response as { success: boolean }));
+            return true; // Async response
+
+          case 'CONTENT_EXTRACT_SELECTION':
+            handleSelectionExtract((response) => sendResponse(response as { success: boolean }));
             return true; // Async response
         }
       }
@@ -174,4 +180,44 @@ function findArticleElement(): Element | null {
   }
 
   return bestCandidate;
+}
+
+interface SelectionExtractResponse {
+  success: boolean;
+  data?: { text: string; wordCount: number } | null;
+  error?: string;
+}
+
+async function handleSelectionExtract(
+  sendResponse: (response: SelectionExtractResponse) => void
+): Promise<void> {
+  try {
+    const selection = extractSelection();
+
+    if (!selection) {
+      console.log('[SimpleReader] No valid selection found');
+      sendResponse({ success: true, data: null });
+      return;
+    }
+
+    console.log(`[SimpleReader] Selection extracted: ${selection.wordCount} words`);
+
+    // Initialize highlighter scoped to selection container
+    const container = getSelectionContainer(selection.range);
+    if (container) {
+      await initializeHighlighterForSelection(container, selection.range);
+    }
+
+    sendResponse({
+      success: true,
+      data: {
+        text: selection.text,
+        wordCount: selection.wordCount,
+      },
+    });
+  } catch (error) {
+    console.error('[SimpleReader] Selection extraction failed:', error);
+    // Fall back gracefully - don't error, just return null
+    sendResponse({ success: true, data: null });
+  }
 }
