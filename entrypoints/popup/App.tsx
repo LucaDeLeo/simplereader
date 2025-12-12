@@ -1,26 +1,37 @@
 import { useState, useEffect } from 'react';
-import { STORAGE_KEYS, getSyncValue, setSyncValue } from '@/lib/storage';
+import { STORAGE_KEYS, getSyncValue, setSyncValue, type HighlightColor } from '@/lib/storage';
 import { Messages, type PlaybackState, type Message } from '@/lib/messages';
-import { MIN_SPEED, MAX_SPEED, DEFAULT_SPEED } from '@/lib/constants';
+import { DEFAULT_SPEED, DEFAULT_VOICE, type KokoroVoice } from '@/lib/constants';
+import { TabNavigation } from './components/TabNavigation';
+import { VoiceSelector } from './components/VoiceSelector';
+import { ColorPicker } from './components/ColorPicker';
+import { SpeedSlider } from './components/SpeedSlider';
 import './App.css';
 
 function App() {
+  const [activeTab, setActiveTab] = useState<'player' | 'settings'>('player');
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [error, setError] = useState<string | null>(null);
-  const [voiceName, setVoiceName] = useState<string>('');
-  const [speed, setSpeed] = useState<number | null>(null);
+
+  // Settings state
+  const [voice, setVoice] = useState<KokoroVoice>(DEFAULT_VOICE);
+  const [speed, setSpeed] = useState<number>(DEFAULT_SPEED);
+  const [highlightColor, setHighlightColor] = useState<HighlightColor>('yellow');
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load current settings to display
     async function loadSettings() {
-      const voice = await getSyncValue(STORAGE_KEYS.preferredVoice);
-      const speedValue = await getSyncValue(STORAGE_KEYS.preferredSpeed);
-      if (voice) setVoiceName(voice);
-      setSpeed(speedValue ?? DEFAULT_SPEED);
+      const storedVoice = await getSyncValue(STORAGE_KEYS.preferredVoice);
+      const storedSpeed = await getSyncValue(STORAGE_KEYS.preferredSpeed);
+      const storedColor = await getSyncValue(STORAGE_KEYS.highlightColor);
+
+      if (storedVoice) setVoice(storedVoice as KokoroVoice);
+      if (storedSpeed !== undefined) setSpeed(storedSpeed);
+      if (storedColor) setHighlightColor(storedColor);
+      setSettingsLoaded(true);
     }
     loadSettings();
 
-    // Listen for playback state changes and errors
     const listener = (message: Message) => {
       if (message.type === 'PLAYBACK_STATE_CHANGED') {
         setPlaybackState(message.state);
@@ -36,6 +47,11 @@ function App() {
     return () => chrome.runtime.onMessage.removeListener(listener);
   }, []);
 
+  const handleSpeedChange = async (newSpeed: number) => {
+    setSpeed(newSpeed);
+    await setSyncValue(STORAGE_KEYS.preferredSpeed, newSpeed);
+  };
+
   const handlePlay = async () => {
     setError(null);
     chrome.runtime.sendMessage(Messages.playbackPlay());
@@ -49,102 +65,80 @@ function App() {
     chrome.runtime.sendMessage(Messages.playbackStop());
   };
 
-  const handleSpeedChange = async (newSpeed: number) => {
-    setSpeed(newSpeed);
-    await setSyncValue(STORAGE_KEYS.preferredSpeed, newSpeed);
-  };
-
   return (
     <div className="popup">
       <h1>SimpleReader</h1>
-      <p className="description">
-        Text-to-speech with word-level highlighting
-      </p>
 
-      {error && (
-        <div className="error-message">
-          {error}
+      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {activeTab === 'player' && (
+        <div className="sr-tab-panel" id="panel-player" role="tabpanel">
+          <p className="description">Text-to-speech with word-level highlighting</p>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <div className="controls">
+            {playbackState === 'stopped' && (
+              <button onClick={handlePlay} className="control-button play">
+                <PlayIcon />
+                <span>Play</span>
+              </button>
+            )}
+
+            {playbackState === 'loading' && (
+              <button disabled className="control-button loading">
+                <LoadingSpinner />
+                <span>Loading...</span>
+              </button>
+            )}
+
+            {playbackState === 'playing' && (
+              <>
+                <button onClick={handlePause} className="control-button pause">
+                  <PauseIcon />
+                  <span>Pause</span>
+                </button>
+                <button onClick={handleStop} className="control-button stop">
+                  <StopIcon />
+                  <span>Stop</span>
+                </button>
+              </>
+            )}
+
+            {playbackState === 'paused' && (
+              <>
+                <button onClick={handlePlay} className="control-button play">
+                  <PlayIcon />
+                  <span>Resume</span>
+                </button>
+                <button onClick={handleStop} className="control-button stop">
+                  <StopIcon />
+                  <span>Stop</span>
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="status-bar">
+            {playbackState === 'stopped' && 'Click Play to start reading'}
+            {playbackState === 'loading' && 'Generating audio...'}
+            {playbackState === 'playing' && 'Now playing'}
+            {playbackState === 'paused' && 'Paused'}
+          </div>
+
+          {settingsLoaded && <SpeedSlider value={speed} onChange={handleSpeedChange} />}
         </div>
       )}
 
-      <div className="controls">
-        {playbackState === 'stopped' && (
-          <button onClick={handlePlay} className="control-button play">
-            <PlayIcon />
-            <span>Play</span>
-          </button>
-        )}
-
-        {playbackState === 'loading' && (
-          <button disabled className="control-button loading">
-            <LoadingSpinner />
-            <span>Loading...</span>
-          </button>
-        )}
-
-        {playbackState === 'playing' && (
-          <>
-            <button onClick={handlePause} className="control-button pause">
-              <PauseIcon />
-              <span>Pause</span>
-            </button>
-            <button onClick={handleStop} className="control-button stop">
-              <StopIcon />
-              <span>Stop</span>
-            </button>
-          </>
-        )}
-
-        {playbackState === 'paused' && (
-          <>
-            <button onClick={handlePlay} className="control-button play">
-              <PlayIcon />
-              <span>Resume</span>
-            </button>
-            <button onClick={handleStop} className="control-button stop">
-              <StopIcon />
-              <span>Stop</span>
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="status-bar">
-        {playbackState === 'stopped' && 'Click Play to start reading'}
-        {playbackState === 'loading' && 'Generating audio...'}
-        {playbackState === 'playing' && 'Now playing'}
-        {playbackState === 'paused' && 'Paused'}
-      </div>
-
-      {speed !== null && (
-        <div className="speed-control">
-          <label htmlFor="sr-speed-slider">Speed: {speed}x</label>
-          <input
-            type="range"
-            id="sr-speed-slider"
-            min={MIN_SPEED}
-            max={MAX_SPEED}
-            step={0.25}
-            value={speed}
-            onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
-          />
+      {activeTab === 'settings' && settingsLoaded && (
+        <div className="sr-tab-panel" id="panel-settings" role="tabpanel">
+          <VoiceSelector value={voice} onChange={setVoice} />
+          <SpeedSlider value={speed} onChange={handleSpeedChange} />
+          <ColorPicker value={highlightColor} onChange={setHighlightColor} />
         </div>
       )}
-
-      <div className="settings-info">
-        {voiceName && <span className="setting">Voice: {formatVoiceName(voiceName)}</span>}
-      </div>
     </div>
   );
-}
-
-// Format voice ID to readable name (e.g., "af_bella" -> "Bella")
-function formatVoiceName(voice: string): string {
-  const parts = voice.split('_');
-  if (parts.length > 1) {
-    return parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
-  }
-  return voice;
 }
 
 // Icon components
