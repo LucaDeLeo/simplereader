@@ -69,11 +69,11 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: User Preferences & Settings
-  epic-4: in-progress
+  epic-4: done
   4-1-settings-popup-ui: done
-  4-2-voice-selection: backlog
-  4-3-speed-preference-persistence: backlog
-  4-4-highlight-color-customization: backlog
+  4-2-voice-selection: done  # Implemented in 4-1
+  4-3-speed-preference-persistence: done  # Implemented in 3-2 + 4-1
+  4-4-highlight-color-customization: done  # Implemented in 4-1
   epic-4-retrospective: optional
 
   # Epic 5: Content Intelligence
